@@ -27,18 +27,18 @@ each one reached.
 
 ## Decisions
 
-### 1. Drop-off Analysis (Where calls actually end)
-Across the call transcripts, prospect drop-off follows a distinct pattern:
-- **Opening → Purpose (42% drop-off):** The sharpest drop occurs within the first 15 seconds. Gatekeepers, executive assistants, or busy prospects aggressively filter calls before the caller can state value ("Who is calling?", "In a meeting", "Where did you get my direct number?").
-- **Permission → Need (33% drop-off):** Prospects who hear the purpose often default to deflection: asking for collateral on WhatsApp or citing lack of time ("I only have 2 minutes, speak fast"). If permission is not secured with a clear micro-commitment, the call ends here.
-- **Objection (15% drop-off):** For prospects who engage into Discovery, the main hurdles are vendor lock-in ("Already under annual contract") and organizational bureaucracy ("Budget frozen" or "Not the decision maker; talk to Owner/MD").
-- **Closed Next Step (~10%):** Successful calls almost always conclude with a specific time-bound callback or an agreed WhatsApp one-pager, rather than an immediate demo booking on the cold call itself.
+### 1. Where calls actually end
+Across the calls, prospect drop-off clusters into three distinct bottlenecks:
+- **Opening & Purpose:** The majority of cold calls terminate within the first 20 seconds. Executive assistants and gatekeepers aggressively deflect before the caller can state value (*"In a meeting"*, *"Who is calling?"*, *"Where did you get my direct number?"*).
+- **Permission & Stalling:** Prospects who allow the caller to state their purpose often default to a WhatsApp request (*"Ping me on WhatsApp first"*) or claim lack of time (*"I have only 2 minutes"*). Calls that do not secure an immediate callback time or micro-commitment drop here.
+- **Objection (Late stage):** In calls that reach discovery, the primary reasons for friction are existing vendor lock-in (*"Annual contract active till next year"*), budget freezes, or lack of authority (*"Talk to the Owner / MD"*).
+- **Agreed Next Steps:** Successful calls almost never produce a direct demo on the spot; they conclude with an agreed WhatsApp summary document or an exact callback time.
 
 ### 2. Transcript-Driven Changes to `frontend/content.js`
-- **Stage 2 (Purpose):** Added verbatim defense phrases ("What is this regarding? Tell me in one sentence", "Where did you get my direct number?", "Drop an email to info@"). Expanded taps to distinguish between genuine inquiry vs. immediate skepticism.
-- **Stage 3 (Permission):** Updated phrasing to reflect modern WhatsApp-first workflows ("Ping me on WhatsApp first", "Send brochure on WhatsApp"). Added taps for fast 2-minute green lights vs. evening callbacks.
-- **Stage 6 (Objection):** Replaced generic brush-offs with the three most prevalent real-world objections: existing vendor lock-in, quarterly budget freeze, and lack of purchasing authority.
-- **Cognitive Load Optimization:** Kept taps large, single-touch, and categorized so the sales rep never looks away from their conversation flow while documenting verbatim pain points in Stage 5.
+- **Stage 2 (Purpose):** Added defensive skepticism phrases (*"What is this regarding? Tell me in one sentence"*, *"Where did you get my direct number?"*, *"Drop an email to info@"*). Added distinct taps for gatekeeper deflections vs. genuine interest.
+- **Stage 3 (Permission):** Grounded in WhatsApp-first sales habits (*"Ping me on WhatsApp first"*, *"Send brochure on WhatsApp"*). Taps allow the rep to quickly log whether a callback time was granted or a document requested.
+- **Stage 6 (Objection):** Replaced vague objections with concrete commercial realities: annual vendor lock-in, quarterly budget freeze, and referral to purchase/owner.
+- **Caller Experience (Cognitive Load):** Designed for a 420px companion window beside the dialer. Large 56px+ tap targets, clear full-fill selected states, a prominent verbatim text area for Stage 5 (Their need), and an obvious separate End Call action to prevent accidental hang-ups.
 
 ## Run it yourself
 1. Supabase: run `db/schema.sql` in the SQL editor.

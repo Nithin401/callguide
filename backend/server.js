@@ -1,23 +1,16 @@
 import express from "express";
 import cors from "cors";
-import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const { SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY, GROQ_MODEL, PORT = 3000 } = process.env;
 
-// Initialize Supabase client if credentials exist
-let db = null;
-try {
-  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
-    db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
-  }
-} catch (e) {
-  console.warn("Supabase init warning:", e.message);
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error("FATAL: SUPABASE_URL and SUPABASE_SERVICE_KEY are required.");
 }
 
-// In-memory fallback store to ensure the caller's screen never breaks
-const memoryCalls = new Map();
-const memoryStages = new Map();
+const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { persistSession: false },
+});
 
 const OUTCOMES = [
   "next_step_agreed",
@@ -41,14 +34,19 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "100kb" }));
 
-const wrap = (fn) => (req, res) => fn(req, res).catch((e) => {
-  console.error("Endpoint error:", e);
-  res.status(500).json({ error: e.message || "Server error" });
-});
+const wrap = (fn) => (req, res) =>
+  fn(req, res).catch((e) => {
+    console.error("Server error:", e.message || e);
+    const msg =
+      e.code === "PGRST205"
+        ? "Database table not found. Please run db/schema.sql in the Supabase SQL editor."
+        : e.message || "Server error";
+    res.status(500).json({ error: msg });
+  });
 
 const clean = (v, max = 1000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-// 1. Health
+// 1. Health check
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
 // 2. Start a call
@@ -59,34 +57,17 @@ app.post("/calls", wrap(async (req, res) => {
     return res.status(400).json({ error: "Prospect name and company are required." });
   }
 
-  // Attempt database insert first
-  if (db) {
-    try {
-      const { data, error } = await db.from("calls").insert({ prospect_name, company }).select().single();
-      if (!error && data) return res.status(201).json(data);
-    } catch (dbErr) {
-      console.warn("Supabase insert fallback:", dbErr.message);
-    }
-  }
+  const { data, error } = await db
+    .from("calls")
+    .insert({ prospect_name, company })
+    .select()
+    .single();
 
-  // Fallback to memory store
-  const row = {
-    id: crypto.randomUUID(),
-    prospect_name,
-    company,
-    status: "open",
-    reached_stage: 1,
-    outcome: null,
-    next_step: null,
-    ai_note: null,
-    started_at: new Date().toISOString(),
-    ended_at: null,
-  };
-  memoryCalls.set(row.id, row);
-  res.status(201).json(row);
+  if (error) throw error;
+  res.status(201).json(data);
 }));
 
-// 3. Save what happened at one stage
+// 3. Save stage result (upsert)
 app.post("/calls/:id/stages", wrap(async (req, res) => {
   const stage = Number(req.body.stage);
   if (!Number.isInteger(stage) || stage < 1 || stage > 8) {
@@ -101,115 +82,91 @@ app.post("/calls/:id/stages", wrap(async (req, res) => {
     saved_at: new Date().toISOString(),
   };
 
-  if (db) {
-    try {
-      const { data, error } = await db.from("stage_results").upsert(row, { onConflict: "call_id,stage" }).select().single();
-      if (!error && data) {
-        await db.from("calls").update({ reached_stage: stage }).eq("id", req.params.id).lt("reached_stage", stage);
-        return res.json(data);
-      }
-    } catch (dbErr) {
-      console.warn("Supabase stage fallback:", dbErr.message);
-    }
-  }
+  const { data, error } = await db
+    .from("stage_results")
+    .upsert(row, { onConflict: "call_id,stage" })
+    .select()
+    .single();
 
-  // Fallback in-memory
-  const stageRow = { id: crypto.randomUUID(), ...row };
-  memoryStages.set(`${req.params.id}:${stage}`, stageRow);
-  const call = memoryCalls.get(req.params.id);
-  if (call && call.reached_stage < stage) {
-    call.reached_stage = stage;
-  }
-  res.json(stageRow);
+  if (error) throw error;
+
+  await db
+    .from("calls")
+    .update({ reached_stage: stage })
+    .eq("id", req.params.id)
+    .lt("reached_stage", stage);
+
+  res.json(data);
 }));
 
-// 4. Close a call, with Groq LLM check
+// 4. Close a call (with Groq LLM check)
 app.post("/calls/:id/close", wrap(async (req, res) => {
   const outcome = clean(req.body.outcome, 40);
-  if (!OUTCOMES.includes(outcome)) return res.status(400).json({ error: "Pick an outcome." });
+  if (!OUTCOMES.includes(outcome)) {
+    return res.status(400).json({ error: "Pick an outcome." });
+  }
+
   const reached_stage = Math.min(8, Math.max(1, Number(req.body.reached_stage) || 1));
   const next_step = clean(req.body.next_step, 300) || null;
 
-  let stages = [];
-  if (db) {
-    try {
-      const { data } = await db.from("stage_results").select("stage,tap,prospect_words").eq("call_id", req.params.id).order("stage");
-      if (data && data.length) stages = data;
-    } catch {}
-  }
+  const { data: stages } = await db
+    .from("stage_results")
+    .select("stage,tap,prospect_words")
+    .eq("call_id", req.params.id)
+    .order("stage");
 
-  if (!stages.length) {
-    stages = Array.from(memoryStages.values())
-      .filter((s) => s.call_id === req.params.id)
-      .sort((a, b) => a.stage - b.stage);
-  }
+  const ai_note = await checkOutcome(outcome, next_step, stages || []);
 
-  const ai_note = await checkOutcome(outcome, next_step, stages);
+  const { data, error } = await db
+    .from("calls")
+    .update({
+      status: "closed",
+      outcome,
+      next_step,
+      ai_note,
+      reached_stage,
+      ended_at: new Date().toISOString(),
+    })
+    .eq("id", req.params.id)
+    .select()
+    .single();
 
-  if (db) {
-    try {
-      const { data, error } = await db.from("calls")
-        .update({ status: "closed", outcome, next_step, ai_note, reached_stage, ended_at: new Date().toISOString() })
-        .eq("id", req.params.id).select().single();
-      if (!error && data) return res.json(data);
-    } catch (dbErr) {
-      console.warn("Supabase close fallback:", dbErr.message);
-    }
-  }
-
-  // Fallback in-memory
-  const call = memoryCalls.get(req.params.id) || {
-    id: req.params.id,
-    prospect_name: "Prospect",
-    company: "Company",
-    started_at: new Date().toISOString(),
-  };
-  call.status = "closed";
-  call.outcome = outcome;
-  call.next_step = next_step;
-  call.ai_note = ai_note;
-  call.reached_stage = reached_stage;
-  call.ended_at = new Date().toISOString();
-  memoryCalls.set(req.params.id, call);
-  res.json(call);
+  if (error) throw error;
+  res.json(data);
 }));
 
-// 5. List calls
+// 5. List past calls
 app.get("/calls", wrap(async (_req, res) => {
-  if (db) {
-    try {
-      const { data, error } = await db.from("calls").select("*").order("started_at", { ascending: false }).limit(200);
-      if (!error && data) return res.json(data);
-    } catch (dbErr) {
-      console.warn("Supabase list fallback:", dbErr.message);
-    }
-  }
+  const { data, error } = await db
+    .from("calls")
+    .select("*")
+    .order("started_at", { ascending: false })
+    .limit(200);
 
-  const list = Array.from(memoryCalls.values()).sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
-  res.json(list);
+  if (error) throw error;
+  res.json(data);
 }));
 
-// 6. One call with its stage results
+// 6. Get single call with its stages
 app.get("/calls/:id", wrap(async (req, res) => {
-  if (db) {
-    try {
-      const { data: call, error } = await db.from("calls").select("*").eq("id", req.params.id).single();
-      if (!error && call) {
-        const { data: stages } = await db.from("stage_results").select("*").eq("call_id", req.params.id).order("stage");
-        return res.json({ ...call, stages: stages || [] });
-      }
-    } catch {}
-  }
+  const { data: call, error } = await db
+    .from("calls")
+    .select("*")
+    .eq("id", req.params.id)
+    .single();
 
-  const call = memoryCalls.get(req.params.id);
-  if (!call) return res.status(404).json({ error: "Call not found." });
-  const stages = Array.from(memoryStages.values())
-    .filter((s) => s.call_id === req.params.id)
-    .sort((a, b) => a.stage - b.stage);
-  res.json({ ...call, stages });
+  if (error) return res.status(404).json({ error: "Call not found." });
+
+  const { data: stages } = await db
+    .from("stage_results")
+    .select("*")
+    .eq("call_id", req.params.id)
+    .order("stage");
+
+  res.json({ ...call, stages: stages || [] });
 }));
 
-// LLM (Groq): Checks whether the logged outcome matches the notes.
+// Groq LLM check
 async function checkOutcome(outcome, next_step, stages) {
   if (!GROQ_API_KEY) return null;
   const notes = stages
