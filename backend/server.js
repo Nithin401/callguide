@@ -107,7 +107,7 @@ async function checkOutcome(outcome, next_step, stages) {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: process.env.GROQ_MODEL || "qwen/qwen3.8-27b",
         temperature: 0.2,
         max_tokens: 120,
         messages: [
