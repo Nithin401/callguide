@@ -6,7 +6,7 @@ write the prospect's own words, then saves the call. A second screen lists past 
 each one reached.
 
 ## Live links
-- Vercel app: ADD-URL-HERE
+- Vercel app: https://callguide-frontend.vercel.app
 - Render backend: https://calllog.onrender.com
 - Health endpoint: https://calllog.onrender.com/health  (the free tier sleeps; the first request can take ~50 seconds)
 
