@@ -7,8 +7,8 @@ each one reached.
 
 ## Live links
 - Vercel app: ADD-URL-HERE
-- Render backend: ADD-URL-HERE
-- Health endpoint: ADD-RENDER-URL/health  (the free tier sleeps; the first request can take ~50 seconds)
+- Render backend: https://calllog.onrender.com
+- Health endpoint: https://calllog.onrender.com/health  (the free tier sleeps; the first request can take ~50 seconds)
 
 ## Stack
 | Part | Where | What |
