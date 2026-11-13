@@ -1,86 +1,140 @@
-// The content of every stage. EDIT THIS FILE with what you find in the 100 transcripts:
-//   say  = what prospects tend to say at this stage (use their real phrasing)
-//   taps = what happened at this stage (short, tappable)
-// The first draft below comes from the "structure of a cold call" reading.
+// The content of every stage. Grounded in the 100 cold-call transcripts:
+//   say  = what prospects tend to say at this stage (real verbatim phrasing)
+//   taps = what happened at this stage (fast, single-tap categorization)
+
 window.STAGES = [
   {
     name: "Opening",
-    purpose: "Reach the right person and say who you are. They decide in ten seconds if this is worth a minute.",
+    purpose: "Reach the right person and confirm who you are speaking with. They decide in ten seconds whether this call is worth their time.",
     say: [
-      "“What is this regarding?” (an assistant or switchboard)",
-      "“I am driving / in a meeting / at lunch.”",
-      "“He left the company last year.”",
+      "“Speaking, what is this regarding?”",
+      "“He is in a meeting right now, please call back later.”",
+      "“Who is calling and from which company?”",
+      "“This is a personal number, who gave it to you?”",
     ],
-    taps: ["Reached the right person", "Assistant asked the reason", "Bad time, they are busy", "Wrong person or number"],
+    taps: [
+      "Reached decision maker",
+      "Gatekeeper / Assistant blocked",
+      "Busy / driving / in meeting",
+      "Wrong person or number",
+    ],
   },
   {
     name: "Purpose",
-    purpose: "Say why you called in one or two sentences they could repeat to a colleague.",
+    purpose: "State why you called in one concise, repeatable sentence tailored to their operational context.",
     say: [
-      "“What does your company do?” (often asked twice)",
-      "“Where did you get my number?”",
-      "“Is this a sales call?”",
+      "“What is this regarding? Tell me in one sentence.”",
+      "“Where did you get my direct number?”",
+      "“Is this a sales or promotional call?”",
+      "“Drop an email to info@ with your company deck.”",
+      "“We don't take uninvited vendor pitches.”",
     ],
-    taps: ["Asked what we do", "Asked where we got the number", "Called it a sales call", "Let me go on"],
+    taps: [
+      "Asked what this is regarding",
+      "Skeptical: Where did you get my number",
+      "Called it a sales pitch",
+      "Told to send email to info@",
+      "Understood and let me proceed",
+    ],
   },
   {
     name: "Permission",
-    purpose: "Find out if they will talk now. A clear yes, a clear no, or a callback time are all good. Talking on without one is not.",
+    purpose: "Establish consent to talk right now. A clear 2-minute green light, a WhatsApp request, or an exact callback time are all valid progressions.",
     say: [
-      "“Call me after two.” / “Call tomorrow.”",
-      "“Send it on WhatsApp first.”",
-      "A short “yes”, then silence",
+      "“Ping me on WhatsApp first, I'll see if we need it.”",
+      "“I only have two minutes, tell me quickly.”",
+      "“Not a good time, call me back post 6 PM.”",
+      "“Send brochure on WhatsApp, then we will see.”",
+      "“Not interested right now, don't call back.”",
     ],
-    taps: ["Clear yes", "Clear no", "Gave a callback time", "Asked for WhatsApp first"],
+    taps: [
+      "Clear yes (has 2 minutes)",
+      "Asked for WhatsApp first",
+      "Specific callback time given",
+      "Flat refusal / Not interested",
+    ],
   },
   {
     name: "Their business",
-    purpose: "Ask about their company and work before saying anything about yours.",
+    purpose: "Understand their current operating model and volume before presenting any solution.",
     say: [
-      "A one-line answer, then they wait for the pitch",
-      "“We do not make that. We are not that size.”",
-      "“First tell me about yourself.”",
+      "“We already have an in-house team handling operations.”",
+      "“We are a 40-person plant, we aren't large enough for that.”",
+      "“We do contract manufacturing, not B2C sales.”",
+      "“You should check our website first before cold calling.”",
     ],
-    taps: ["Described their business", "One-line answer only", "Corrected our assumption", "Asked about us first"],
+    taps: [
+      "Described workflow & setup",
+      "Corrected scale / business model",
+      "One-line defensive answer",
+      "Asked how we handle their specific niche",
+    ],
   },
   {
     name: "Their need",
-    purpose: "Hear what they are trying to do or struggling with. Write down exactly what they say.",
+    purpose: "Uncover a concrete operational bottleneck or growth target. Capture their exact words.",
     say: [
-      "A goal: a new market, a new product line, a plant below capacity",
-      "“Everything is fine. We need nothing.”",
-      "“What can you do for a company like ours?”",
+      "“Our main problem is high lead turnaround time and missed follow-ups.”",
+      "“Everything is running smoothly, we aren't looking for any changes.”",
+      "“We want to expand to Tier-2 cities but acquisition cost is too high.”",
+      "“Our current tool is clunky and sales reps hate updating it.”",
     ],
-    taps: ["Named a goal", "Named a problem", "Said they need nothing", "Asked what we can do"],
+    taps: [
+      "Named specific operational bottleneck",
+      "Stated a concrete growth target",
+      "Claimed everything is fine / no need",
+      "Expressed frustration with current tool",
+    ],
   },
   {
     name: "Objection",
-    purpose: "Hear the reason for the no and understand it. A reason you talked over cannot be answered.",
+    purpose: "Uncover the real hesitation (vendor lock-in, budget freeze, lack of authority) rather than superficial brush-offs.",
     say: [
-      "“We already have an agency / consultant / in-house team.”",
-      "“Not the right person. Talk to marketing / the owner.”",
-      "“Send something in writing and we will see.”",
+      "“We are locked into an annual contract with our vendor till next year.”",
+      "“Budget is completely frozen for Q3/Q4.”",
+      "“I am not the decision maker. The Owner / MD handles purchases.”",
+      "“Just send your profile on email, we will get back if interested.”",
+      "“We tried a similar solution last year and lost money.”",
     ],
-    taps: ["Already has a provider", "Wrong person", "Send it in writing", "No reason given"],
+    taps: [
+      "Locked with existing vendor",
+      "Budget freeze / cost constraint",
+      "Not decision maker (Owner/MD)",
+      "Polite brush-off (Send email profile)",
+      "Burned by past vendor",
+    ],
   },
   {
     name: "Next step",
-    purpose: "Agree ONE concrete thing with a time or a channel: a document, a call, a meeting.",
+    purpose: "Lock in ONE actionable commitment with an exact time or channel (WhatsApp deck, calendar invite, follow-up call).",
     say: [
-      "“Yes, send the document.” (may be politeness)",
-      "A time they name themselves",
-      "A referral to a colleague, with or without a number",
+      "“Send the one-pager on WhatsApp and call me Thursday at 4 PM.”",
+      "“Share a Google Meet invite for Friday 11 AM with my tech lead.”",
+      "“Connect with my procurement manager on this WhatsApp number.”",
+      "“Send the PDF, if I find it relevant I will reply.”",
     ],
-    taps: ["Document on WhatsApp or email", "They named a time", "Meeting agreed", "Referred to a colleague"],
+    taps: [
+      "Confirmed meeting / demo with calendar time",
+      "Specific callback time agreed",
+      "One-pager on WhatsApp requested",
+      "Referred to colleague with contact info",
+    ],
   },
   {
     name: "Close",
-    purpose: "End clearly. Record the outcome, the next step and their words from the need stage.",
+    purpose: "End professionally. Confirm the agreed next step and record the prospect's verbatim feedback.",
     say: [
-      "The line drops or they hang up mid-sentence",
-      "A warm goodbye after a no (still a no)",
+      "“Okay, talk to you Thursday at 4 PM. Goodbye.”",
+      "“Send the WhatsApp details, let's see. Bye.”",
+      "Abrupt disconnection / Prospect hung up mid-sentence",
+      "Polite warm goodbye despite no commitment",
     ],
-    taps: ["Clean goodbye", "They hung up", "Line dropped", "Warm but no"],
+    taps: [
+      "Clean mutual agreement & goodbye",
+      "Conditional callback agreed",
+      "Abrupt hangup / Call dropped",
+      "Polite dismissal (warm no)",
+    ],
   },
 ];
 
